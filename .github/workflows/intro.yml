@@ -1,0 +1,23 @@
+name: Intro to ci
+
+on:
+    push:
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup pnpm
+              uses: pnpm/action-setup@v2.4.0
+              with:
+                  version: 8
+                  run_install: false
+
+            - name: Install dependencies
+              run: pnpm install
+
+            - name: Build
+              run: pnpm run build
