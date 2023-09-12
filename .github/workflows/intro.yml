@@ -49,7 +49,7 @@ jobs:
               run: |
                 curl -I http://localhost:4173
 
-    deploy:
+    deploy_on_vercel:
         runs-on: ubuntu-latest
         needs: build
         steps:
@@ -86,3 +86,44 @@ jobs:
               run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
             - name: Deploy Project Artifacts to Vercel
               run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+    deploy_on_netlify:
+        runs-on: ubuntu-latest
+        needs: build
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - uses: pnpm/action-setup@v2.4.0
+              name: Install pnpm
+              with:
+                version: 8
+                run_install: false
+
+            - name: Get pnpm store directory
+              shell: bash
+              run: |
+                echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+      
+            - uses: actions/cache@v3
+              name: Setup pnpm cache
+              with:
+                path: ${{ env.STORE_PATH }}
+                key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+                restore-keys: |
+                  ${{ runner.os }}-pnpm-store-
+
+            - name: Install dependencies
+              run: pnpm install
+
+            - name: Build
+              run: pnpm run build
+
+            - name: Deploy production to Netlify
+              uses: South-Paw/action-netlify-deploy@v1.2.0
+              with:
+                github-token: ${{ secrets.GITHUB_TOKEN }}
+                netlify-auth-token: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+                netlify-site-id: ${{ secrets.NETLIFY_SITE_ID }}
+                build-dir: './build'
+                comment-on-commit: true
